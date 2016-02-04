@@ -21,11 +21,13 @@ Namespace contensive.addon.aoExportData
                 Dim csContent As CPCSBaseClass = CP.CSNew()
                 Dim csLookup As CPCSBaseClass = CP.CSNew()
                 Dim csTasks As CPCSBaseClass = CP.CSNew()
-                Dim treeDetailList As New List(Of oneTreeDetailClass)
+                'Dim treeDetailList As New oneGroupDetailClass 'New List(Of oneTreeDetailClass)
+                Dim sendDataObject As New dataObjectClass
                 Dim contentID As Integer = CP.Doc.GetInteger("contentID")
                 '
                 Dim mainSQLTable As String = String.Empty
                 Dim SelectSQL As String = String.Empty
+                Dim SelectGroupIDSQL As String = String.Empty
                 Dim FromSQL As String = String.Empty
                 Dim finalSQL As String = String.Empty
 
@@ -38,14 +40,14 @@ Namespace contensive.addon.aoExportData
 
                 Dim fileName As String = String.Empty
 
-                treeDetailList = deserializeTreeDetailList(CP, CP.Doc.GetText("jsonData"))
+                sendDataObject = deserializeTreeDetailList(CP, CP.Doc.GetText("jsonData"))
 
                 If contentID <> 0 Then
                     If csContent.Open("Content", " id = " & contentID) Then
                         mainSQLTable = csContent.GetText("ContentTableID")
 
                         ' Loop inside the Array Field
-                        For Each oneField As oneTreeDetailClass In treeDetailList
+                        For Each oneField As oneTreeDetailClass In sendDataObject.contentFieldList
                             If oneField.selected Then
 
                                 If oneField.isLookup Then
@@ -90,6 +92,44 @@ Namespace contensive.addon.aoExportData
                         finalSQL = "select " & SelectSQL & vbCrLf _
                             & " from " & FromSQL
 
+                        SelectGroupIDSQL = ""
+                        If mainSQLTable.ToLower.Trim = "ccmembers" Then
+                            ' we neeed add the groups
+                            ' build the group id list
+                            '
+                            For Each oneField As oneGroupDetailClass In sendDataObject.contentGroupList
+                                If oneField.selected Then
+
+                                    ' create the select field
+                                    SelectGroupIDSQL &= ", " & oneField.id
+
+                                End If
+                            Next
+                            '
+
+                            If Not String.IsNullOrEmpty(SelectGroupIDSQL.Trim) Then
+                                '
+                                If SelectGroupIDSQL.Length > 2 Then
+                                    If SelectGroupIDSQL.Substring(0, 2) = ", " Then
+                                        SelectGroupIDSQL = SelectGroupIDSQL.Substring(2)
+                                    End If
+                                End If
+                                '
+                                CP.Utils.AppendLog("DBQuery.log", "SelectGroupIDSQL : " & SelectGroupIDSQL)
+
+                                '
+                                finalSQL = finalSQL _
+                                        & " WHERE ccMembers.id IN ( " _
+                                        & " select MR.MemberID " _
+                                        & " from ccMemberRules MR " _
+                                        & " where MR.GroupID IN (" & SelectGroupIDSQL & ") " _
+                                        & " ) "
+                            End If
+
+                            '
+                        End If
+
+
                         CP.Utils.AppendLog("DBQuery.log", "Sql : " & finalSQL)
 
                         ' Create the report task
@@ -116,14 +156,14 @@ Namespace contensive.addon.aoExportData
         '
         '
         '
-        Private Function deserializeTreeDetailList(ByVal CP As Contensive.BaseClasses.CPBaseClass, ByVal value As String) As List(Of oneTreeDetailClass)
-            Dim o As New List(Of oneTreeDetailClass)
+        Private Function deserializeTreeDetailList(ByVal CP As Contensive.BaseClasses.CPBaseClass, ByVal value As String) As dataObjectClass 'List(Of oneTreeDetailClass)
+            Dim o As New dataObjectClass 'List(Of oneTreeDetailClass)
             '
             Try
                 '
                 '   for example see testDataSerializerClass
                 '
-                o = Newtonsoft.Json.JsonConvert.DeserializeObject(Of List(Of oneTreeDetailClass))(value)
+                o = Newtonsoft.Json.JsonConvert.DeserializeObject(Of dataObjectClass)(value)
             Catch ex As Exception
                 Try
                     CP.Site.ErrorReport(ex, "error in contensive.addon.dli.GarmentAnalysisAppBackEndApi.deserializePaymentSubmission")
@@ -154,6 +194,21 @@ Namespace contensive.addon.aoExportData
             Public contentName As String
             Public selected As Boolean
             Public isLookup As Boolean
+        End Class
+        '
+        '
+        '
+        Private Class oneGroupDetailClass
+            Public id As Integer
+            Public name As String
+            Public selected As Boolean
+        End Class
+        '
+        '
+        '
+        Private Class dataObjectClass
+            Public contentFieldList As New List(Of oneTreeDetailClass)
+            Public contentGroupList As New List(Of oneGroupDetailClass)
         End Class
     End Class
 End Namespace

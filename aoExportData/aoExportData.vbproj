@@ -90,6 +90,7 @@
     <Compile Include="common.vb" />
     <Compile Include="contentDefinitionFieldList.vb" />
     <Compile Include="contentDefinitionFieldProcess.vb" />
+    <Compile Include="contentDefinitionGroupList.vb" />
     <Compile Include="contentDefinitionListClass.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

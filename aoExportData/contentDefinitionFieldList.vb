@@ -39,30 +39,37 @@ Namespace contensive.addon.aoExportData
                 '
                 Dim lookupContentID As Integer = 0
 
-                If cs.Open("Content Fields", "ContentID = " & contentID, "EditSortPriority") Then
+                If cs.Open("Content Fields", "ContentID = " & contentID, "Name") Then
                     Do
                         If (cs.GetInteger("Type") <> RedirectFieldTypeID) And (cs.GetInteger("Type") <> TextFileFieldTypeID) And (cs.GetInteger("Type") <> ManyToManyFieldTypeID) And (cs.GetInteger("Type") <> MemberSelectFieldTypeID) Then
                             '
-                            oneTreeDetail = New oneTreeDetailClass
-                            '
-                            oneTreeDetail.id = cs.GetInteger("id")
-                            oneTreeDetail.name = cs.GetText("name")
-                            oneTreeDetail.caption = cs.GetText("caption")
-                            '
-                            If cs.GetInteger("Type") = LookupFieldTypeID Then
-                                oneTreeDetail.isLookup = True
-                                lookupContentID = cs.GetInteger("LookupContentID")
-                                'Content ContentTableID
-                                If csContent.Open("Content", "id=" & lookupContentID) Then
-                                    oneTreeDetail.contentName = csContent.GetText("ContentTableID")
+                            If cs.GetText("name").ToLower.Trim <> "password" Then
+                                '
+                                oneTreeDetail = New oneTreeDetailClass
+                                '
+                                oneTreeDetail.id = cs.GetInteger("id")
+                                oneTreeDetail.name = cs.GetText("name")
+                                oneTreeDetail.caption = cs.GetText("caption")
+                                If Not String.IsNullOrEmpty(cs.GetText("EditTab")) Then
+                                    oneTreeDetail.caption = cs.GetText("EditTab") & "-" & cs.GetText("caption")
                                 End If
-                                csContent.Close()
-                            Else
-                                oneTreeDetail.isLookup = False
+                                '
+                                If cs.GetInteger("Type") = LookupFieldTypeID Then
+                                    oneTreeDetail.isLookup = True
+                                    lookupContentID = cs.GetInteger("LookupContentID")
+                                    'Content ContentTableID
+                                    If csContent.Open("Content", "id=" & lookupContentID) Then
+                                        oneTreeDetail.contentName = csContent.GetText("ContentTableID")
+                                    End If
+                                    csContent.Close()
+                                Else
+                                    oneTreeDetail.isLookup = False
+                                End If
+                                '
+                                oneTreeDetail.selected = False
+                                treeDetailList.Add(oneTreeDetail)
+                                '
                             End If
-                            '
-                            oneTreeDetail.selected = False
-                            treeDetailList.Add(oneTreeDetail)
                             '
                         End If
 
