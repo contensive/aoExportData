@@ -123,12 +123,16 @@ Namespace contensive.addon.aoExportData
                                         & " select MR.MemberID " _
                                         & " from ccMemberRules MR " _
                                         & " where MR.GroupID IN (" & SelectGroupIDSQL & ") " _
-                                        & " ) "
+                                        & " ) " _
+                                        & " AND ccMembers.ContentControlID in (select id from ccContent) "
                             End If
 
                             '
                         End If
 
+                        If Not finalSQL.Contains("WHERE") Then
+                            finalSQL = finalSQL & " WHERE " & mainSQLTable.ToLower.Trim & ".ContentControlID in (select id from ccContent) "
+                        End If
 
                         CP.Utils.AppendLog("DBQuery.log", "Sql : " & finalSQL)
 
